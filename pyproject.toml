@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "acp-tui"
+version = "0.1.0"
+description = "Minimal terminal client for any Agent Client Protocol (ACP) server. Connects over WebSocket — pairs with hermes-bridge for Hermes sessions."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [{ name = "Logan Saether" }]
+dependencies = [
+    "textual>=0.60",
+    "websockets>=12",
+]
+
+[project.scripts]
+acp-tui = "acp_tui.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/acp_tui"]
