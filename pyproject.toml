@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "acp-tui"
-version = "0.1.0"
+version = "0.1.1"
 description = "Minimal debugger TUI for the Agent Client Protocol (ACP). Connects to any ACP-over-WebSocket server and displays raw protocol frames. Compatible with acp-mux for multi-subscriber sessions."
 readme = "README.md"
 license = { text = "MIT" }
