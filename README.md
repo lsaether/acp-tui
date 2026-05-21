@@ -23,6 +23,21 @@ acp-tui --url ws://127.0.0.1:8765/acp --session my-debug
 
 On startup it sends `initialize`, creates a new ACP session via `session/new`, and shows the resulting `sessionId` in the header. Type into the input box and press Enter to send a `session/prompt`. Every incoming frame — token deltas, tool events, agent-initiated requests, multiplex notifications — renders in the log as it arrives.
 
+### Responding to `session/request_permission`
+
+When the agent asks for permission to run a tool, the TUI renders the request inline with a numbered key legend, e.g.
+
+```
+permission #1 (id=10001) execute · demo_tool
+  [1] Allow once  [2] Deny  [esc] cancel
+```
+
+Press the matching digit to select an option, or `esc` to send a cancelled outcome. Digit keys are only intercepted when the input box is empty, so typing a prompt that happens to contain a digit isn't hijacked. If several permissions arrive while one is unresolved, they queue FIFO — only the front responds to keys until you resolve it.
+
+When connected via acp-mux (multi-subscriber), the mux broadcasts `amux/agent_request_resolved` to every peer as soon as one peer answers. The other TUIs dismiss their copy of the pending permission and log a one-liner showing who resolved it and which option was selected, so no client is left staring at a stuck prompt.
+
+If no peer answers and the agent's own deadline fires (e.g. hermes defaults to denying a permission request after 60s and carries on), the mux notices the turn ending with the request still outstanding and broadcasts a `resolvedBy: "mux:turn-ended"` cleanup. The TUI dismisses the prompt with an `expired (no reply before turn ended)` line so you can see exactly why the entry went away.
+
 ### Debugging a stdio ACP agent (websocat bridge)
 
 The canonical ACP transport is stdio — agents like `hermes acp`, `claude-code-acp`, and others speak JSON-RPC over stdin/stdout. To point acp-tui at a stdio agent, wrap it in a one-shot WebSocket listener with [websocat](https://github.com/vi/websocat):
