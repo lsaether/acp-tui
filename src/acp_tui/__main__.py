@@ -1,4 +1,4 @@
-"""CLI entry: `acp-tui [--url ...] [--session ...] [--log-level ...]`."""
+"""CLI entry: `acp-tui [--url ...] [--session ...] [--peer-id ...] [--peer-name ...] [--log-level ...]`."""
 
 from __future__ import annotations
 
@@ -11,29 +11,66 @@ from urllib.parse import urlencode, urlparse, urlunparse
 from .app import ACPApp
 
 
-def _ensure_session_param(url: str, session: str) -> str:
-    """Return `url` with `?session=<session>` appended if no query string is present."""
+def _ensure_query_params(
+    url: str,
+    session: str,
+    peer_id: str,
+    peer_name: str | None,
+    role: str | None,
+) -> str:
+    """Return `url` with the standard ACP-server query params attached.
+
+    If the caller already put a query string on `url`, trust it verbatim —
+    we don't want to second-guess explicit configuration. Otherwise build
+    `?session=...&peer_id=...[&peer_name=...][&role=...]` from CLI args.
+    The `peer_id` param is required by amux (close 4400 without it) and
+    ignored by hermes-bridge, so it's safe to always include.
+    """
     parsed = urlparse(url)
     if parsed.query:
-        # Caller put their own query — trust it.
         return url
-    return urlunparse(parsed._replace(query=urlencode({"session": session})))
+    params: dict[str, str] = {"session": session, "peer_id": peer_id}
+    if peer_name:
+        params["peer_name"] = peer_name
+    if role:
+        params["role"] = role
+    return urlunparse(parsed._replace(query=urlencode(params)))
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="acp-tui",
-        description="Minimal terminal client for an ACP server (e.g. hermes-bridge).",
+        description=(
+            "Minimal terminal client for an ACP server "
+            "(e.g. hermes-bridge, or amux for multi-subscriber sessions)."
+        ),
     )
     p.add_argument(
         "--url",
         default="ws://127.0.0.1:8765/acp",
-        help="Bridge WebSocket URL. If it has no query string, --session is appended.",
+        help="ACP server WebSocket URL. If it has no query string, "
+        "--session, --peer-id, --peer-name, --role are encoded into it.",
     )
     p.add_argument(
         "--session",
         default=None,
-        help="Bridge session id. Defaults to a random short token (no reattach).",
+        help="Session id. Defaults to a random short token (no reattach).",
+    )
+    p.add_argument(
+        "--peer-id",
+        default=None,
+        help="Per-subscriber identity. Required by amux; ignored by other "
+        "ACP servers. Defaults to a random short token.",
+    )
+    p.add_argument(
+        "--peer-name",
+        default=None,
+        help="Optional human-friendly name for this subscriber (amux only).",
+    )
+    p.add_argument(
+        "--role",
+        default=None,
+        help="Optional role tag for this subscriber (amux only).",
     )
     p.add_argument(
         "--log-level",
@@ -53,7 +90,8 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     session = args.session or f"acp-tui-{secrets.token_hex(4)}"
-    url = _ensure_session_param(args.url, session)
+    peer_id = args.peer_id or f"tui-{secrets.token_hex(3)}"
+    url = _ensure_query_params(args.url, session, peer_id, args.peer_name, args.role)
 
     app = ACPApp(url=url)
     app.run()
