@@ -23,8 +23,9 @@ def _ensure_query_params(
     If the caller already put a query string on `url`, trust it verbatim —
     we don't want to second-guess explicit configuration. Otherwise build
     `?session=...&peer_id=...[&peer_name=...][&role=...]` from CLI args.
-    The `peer_id` param is required by amux (close 4400 without it) and
-    ignored by hermes-bridge, so it's safe to always include.
+    The `peer_id` param is required by acp-mux (close 4400 without it) and
+    ignored by ACP servers that don't model per-subscriber identity, so
+    it's safe to always include.
     """
     parsed = urlparse(url)
     if parsed.query:
@@ -41,8 +42,9 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="acp-tui",
         description=(
-            "Minimal terminal client for an ACP server "
-            "(e.g. hermes-bridge, or amux for multi-subscriber sessions)."
+            "Minimal debugger TUI for the Agent Client Protocol (ACP). "
+            "Displays raw protocol frames from any ACP-over-WebSocket "
+            "server. Compatible with acp-mux for multi-subscriber sessions."
         ),
     )
     p.add_argument(

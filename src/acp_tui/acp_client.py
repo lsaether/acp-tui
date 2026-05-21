@@ -10,8 +10,9 @@ Wraps a `websockets` connection and exposes a small JSON-RPC API:
     distinguishes by checking for the `id` and `method` keys.
 
 The client allocates client-side request ids autonomously starting at 1.
-The bridge (hermes-bridge) is responsible for translating those into
-session-unique ids when it forwards to hermes-acp; we don't see that.
+Any server-side id translation (e.g. acp-mux rewriting client ids to
+per-session mux ids before forwarding to the agent) is opaque to us — we
+only see our original ids restored on responses.
 """
 
 from __future__ import annotations
