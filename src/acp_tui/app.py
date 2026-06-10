@@ -117,7 +117,10 @@ class PromptInput(Input):
 
 class ACPApp(App):
     TITLE = "acp-tui"
-    BINDINGS = [Binding("ctrl+c", "quit", "Quit", priority=True)]
+    BINDINGS = [
+        Binding("ctrl+c", "quit", "Quit", priority=True),
+        Binding("ctrl+x", "cancel_turn", "Cancel turn", priority=True),
+    ]
 
     CSS = """
     #status {
@@ -324,6 +327,25 @@ class ACPApp(App):
         if self._pending_permissions:
             nxt = self._pending_permissions[0]
             log.write(f"  [dim]next active: permission #{nxt.seq}[/]")
+
+    async def action_cancel_turn(self) -> None:
+        """Request cancellation of the in-flight ACP turn."""
+        log = self.query_one("#log", RichLog)
+        prompt_input = self.query_one("#prompt-input", Input)
+        if self.client is None or self.acp_session_id is None or not prompt_input.disabled:
+            log.write("[dim]no turn in flight[/]")
+            return
+
+        try:
+            await self.client.notify(
+                "session/cancel",
+                {"sessionId": self.acp_session_id},
+            )
+        except Exception as exc:
+            log.write(f"[red]cancel failed[/] {type(exc).__name__}: {exc}")
+            return
+        log.write("[bold yellow]cancel requested[/]")
+        prompt_input.placeholder = "cancelling…"
 
     async def permission_select(self, index: int) -> None:
         """Reply to the active permission with the option at 1-based `index`."""

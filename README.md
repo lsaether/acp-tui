@@ -21,7 +21,7 @@ Point it at any ACP-over-WebSocket server:
 acp-tui --url ws://127.0.0.1:8765/acp --session my-debug
 ```
 
-On startup it sends `initialize`, creates a new ACP session via `session/new`, and shows the resulting `sessionId` in the header. Type into the input box and press Enter to send a `session/prompt`. Every incoming frame — token deltas, tool events, agent-initiated requests, multiplex notifications — renders in the log as it arrives.
+On startup it sends `initialize`, creates a new ACP session via `session/new`, and shows the resulting `sessionId` in the header. Type into the input box and press Enter to send a `session/prompt`. While a prompt is in flight, press `Ctrl-X` to send `session/cancel` without closing the TUI. Every incoming frame — token deltas, tool events, agent-initiated requests, multiplex notifications — renders in the log as it arrives.
 
 ### Responding to `session/request_permission`
 
